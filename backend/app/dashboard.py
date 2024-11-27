@@ -1,27 +1,15 @@
 from flask import Flask, jsonify
-from prisma import Prisma
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from .database import get_db
+from .models import Post
 
 router = APIRouter()
 
 app = Flask(__name__)
-prisma = Prisma()
 
-@router.get('/profile/{userid}/editpf')
-async def edit_profile(username):
-    try:
-        following = await prisma.user.find_unique(
-            where={
-                'username': username,
-            },
-            select={
-                'username': True,
-                'bio': True,
-            },
-        )
-        return jsonify(following)
-    except Exception as error:
-        return jsonify({'error': str(error)}), 500
-
+@router.get('/{userid}/dashboard')
+async def get_dashboard(userid: int, db=Depends(get_db)):
+    posts = db.query(Post).filter(Post.user_id == userid).all()
+    return jsonify(posts)
 if __name__ == '__main__':
     app.run(debug=True)
